@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Recherche d'emplois disponibles à l'OPT selon vos compétences et préférences">
+    <title>Recherche d'emplois - OPT</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💼</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <header class="page-header">
+            <h1>Recherche d'emplois disponibles à l'OPT</h1>
+            <p class="subtitle">Trouvez l'emploi qui correspond à vos compétences</p>
+        </header>
+
+        <main>
+            <section class="search-section">
+                <form method="POST" class="search-form" novalidate>
+                    <div class="form-group">
+                        <label for="competences">
+                            <span class="label-icon">🎯</span>
+                            Compétence principale :
+                            <span class="required" aria-label="Champ obligatoire">*</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            id="competences" 
+                            name="competences"
+                            value="{{ competence or '' }}"
+                            placeholder="Ex: informatique, administration, bâtiment..."
+                            required
+                            autocomplete="off"
+                            aria-describedby="competences-help">
+                        <small id="competences-help" class="field-help">
+                            Saisissez votre domaine de compétence principal
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="souhait">
+                            <span class="label-icon">💡</span>
+                            Souhait d'emploi (facultatif) :
+                        </label>
+                        <input 
+                            type="text" 
+                            id="souhait" 
+                            name="souhait"
+                            value="{{ souhait or '' }}"
+                            placeholder="Ex: développeur, secrétaire, technicien..."
+                            autocomplete="off"
+                            aria-describedby="souhait-help">
+                        <small id="souhait-help" class="field-help">
+                            Précisez le type de poste recherché
+                        </small>
+                    </div>
+
+                    <button type="submit" class="search-btn">
+                        <span class="btn-icon">🔍</span>
+                        Rechercher les emplois
+                    </button>
+                </form>
+            </section>
+
+            {% if metiers is not none %}
+            <section class="results-section" role="region" aria-label="Résultats de recherche">
+                <div class="results-header">
+                    <h2>
+                        <span class="results-icon">💼</span>
+                        Résultats de recherche
+                        {% if metiers %}
+                            <span class="results-count">({{ metiers|length }} emploi{{ 's' if metiers|length > 1 else '' }} trouvé{{ 's' if metiers|length > 1 else '' }})</span>
+                        {% endif %}
+                    </h2>
+                </div>
+
+                {% if metiers %}
+                    <ul class="jobs-list" role="list">
+                        {% for m in metiers %}
+                            <li class="job-item" role="listitem">
+                                <div class="job-content">
+                                    <h3 class="job-title">{{ m.intitule }}</h3>
+                                    <div class="job-details">
+                                        <span class="job-code">
+                                            <span class="code-label">Code Tiahre :</span>
+                                            <strong>{{ m.code_Tiahre }}</strong>
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="job-actions">
+                                    <button type="button" class="btn-secondary" onclick="copyJobInfo('{{ m.intitule }}', '{{ m.code_Tiahre }}')">
+                                        📋 Copier
+                                    </button>
+                                    <button type="button" class="btn-primary" onclick="openJobDetails('{{ m.code_Tiahre }}', '{{ m.intitule }}')">
+                                        📄 En savoir plus
+                                    </button>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+
+                    <div class="results-footer">
+                        <p class="results-info">
+                            <strong>{{ metiers|length }}</strong> emploi{{ 's' if metiers|length > 1 else '' }} 
+                            correspond{{ 'ent' if metiers|length > 1 else '' }} à votre recherche
+                        </p>
+                        <button type="button" class="btn-secondary" onclick="window.print()">
+                            🖨️ Imprimer les résultats
+                        </button>
+                    </div>
+                {% else %}
+                    <div class="no-results" role="status">
+                        <div class="no-results-icon">🔍</div>
+                        <h3>Aucun emploi trouvé</h3>
+                        <p>Nous n'avons trouvé aucun emploi correspondant à votre recherche.</p>
+                        <div class="suggestions">
+                            <p><strong>Suggestions :</strong></p>
+                            <ul>
+                                <li>Vérifiez l'orthographe de vos mots-clés</li>
+                                <li>Essayez des termes plus généraux</li>
+                                <li>Utilisez des synonymes</li>
+                            </ul>
+                        </div>
+                        <button type="button" class="btn-secondary" onclick="clearForm()">
+                            🔄 Nouvelle recherche
+                        </button>
+                    </div>
+                {% endif %}
+            </section>
+            {% endif %}
+        </main>
+
+        <footer class="page-footer">
+            <p>&copy; 2024 OPT - Office des Postes et Télécommunications</p>
+        </footer>
+    </div>
+
+    <script>
+        // Fonction pour ouvrir les détails d'un métier
+        function openJobDetails(code, title) {
+            // URL du PDF officiel OPT
+            const pdfBaseUrl = 'https://office.opt.nc/sites/corporate/files/media/file/repertoire_des_emplois_opt-nc_2017.pdf';
+            
+            // Option 1: Ouvrir le PDF avec recherche automatique du code
+            const pdfUrl = `${pdfBaseUrl}#search=${code}`;
+            
+            // Option 2: Si vous connaissez les pages spécifiques, utilisez cette fonction
+            // const pageNumber = getPageNumber(code);
+            // const pdfUrl = `${pdfBaseUrl}#page=${pageNumber}`;
+            
+            // Ouvrir dans une nouvelle fenêtre avec dimensions optimisées
+            const windowFeatures = 'width=1000,height=800,scrollbars=yes,resizable=yes,toolbar=yes,menubar=yes';
+            const newWindow = window.open(pdfUrl, `job_details_${code}`, windowFeatures);
+            
+            // Fallback si le popup est bloqué
+            if (!newWindow) {
+                showNotification('Veuillez autoriser les popups pour voir les détails du métier', 'warning');
+                // Alternative: téléchargement direct
+                setTimeout(() => {
+                    const link = document.createElement('a');
+                    link.href = pdfBaseUrl;
+                    link.target = '_blank';
+                    link.click();
+                }, 1000);
+            } else {
+                showNotification(`Ouverture des détails pour: ${title}`);
+            }
+        }
+
+        // Fonction pour déterminer le numéro de page selon le code Tiahre
+        // Vous pouvez remplir cette fonction si vous connaissez la structure exacte du PDF
+        function getPageNumber(code) {
+            // Mapping approximatif basé sur les codes Tiahre (à ajuster selon le PDF réel)
+            const pageMapping = {
+                // Exemples - vous devrez les adapter selon le contenu réel du PDF
+                // Codes commençant par A (Administration)
+                'A': 10,
+                // Codes commençant par B (Bâtiment)  
+                'B': 25,
+                // Codes commençant par C (Commercial)
+                'C': 40,
+                // Codes commençant par D (Direction)
+                'D': 55,
+                // Codes commençant par E (Exploitation)
+                'E': 70,
+                // Codes commençant par F (Finance)
+                'F': 85,
+                // Codes commençant par G (Gestion)
+                'G': 100,
+                // Codes commençant par H (Ressources Humaines)
+                'H': 115,
+                // Codes commençant par I (Informatique)
+                'I': 130,
+                // Codes commençant par J (Juridique)
+                'J': 145,
+                // Codes commençant par K (Marketing)
+                'K': 160,
+                // Codes commençant par L (Logistique)
+                'L': 175,
+                // Codes commençant par M (Maintenance)
+                'M': 190,
+                // Codes commençant par N (Réseau)
+                'N': 205,
+                // Codes commençant par O (Organisation)
+                'O': 220,
+                // Codes commençant par P (Production)
+                'P': 235,
+                // Codes commençant par R (Relation client)
+                'R': 250,
+                // Codes commençant par S (Support)
+                'S': 265,
+                // Codes commençant par T (Technique)
+                'T': 280,
+                // Codes commençant par V (Vente)
+                'V': 295
+            };
+            
+            // Récupère la première lettre du code pour déterminer la section
+            const firstLetter = code.charAt(0).toUpperCase();
+            return pageMapping[firstLetter] || 1;
+        }
+        function copyJobInfo(title, code) {
+            const text = `Emploi: ${title}\nCode Tiahre: ${code}`;
+            navigator.clipboard.writeText(text).then(() => {
+                showNotification('Informations copiées !');
+            }).catch(() => {
+                // Fallback pour les navigateurs plus anciens
+                const textArea = document.createElement('textarea');
+                textArea.value = text;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                showNotification('Informations copiées !');
+            });
+        }
+
+        // Fonction pour vider le formulaire
+        function clearForm() {
+            document.getElementById('competences').value = '';
+            document.getElementById('souhait').value = '';
+            document.getElementById('competences').focus();
+        }
+
+        // Fonction pour afficher les notifications
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    if (document.body.contains(notification)) {
+                        document.body.removeChild(notification);
+                    }
+                }, 300);
+            }, type === 'warning' ? 4000 : 2000);
+        }
+
+        // Amélioration de l'accessibilité - navigation au clavier
+        document.addEventListener('DOMContentLoaded', function() {
+            // Focus automatique sur le premier champ
+            const firstInput = document.getElementById('competences');
+            if (firstInput && !firstInput.value) {
+                firstInput.focus();
+            }
+
+            // Soumission du formulaire avec Ctrl+Enter
+            document.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    const form = document.querySelector('.search-form');
+                    if (form) {
+                        form.submit();
+                    }
+                }
+            });
+        });
+    </script>
+
+    <style>
+        /* Styles pour les notifications */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            max-width: 300px;
+        }
+
+        .notification.warning {
+            background: #f59e0b;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        /* Styles pour les boutons d'action */
+        .job-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-secondary {
+            background: rgba(107, 114, 128, 0.1);
+            color: #374151;
+            border: 1px solid rgba(107, 114, 128, 0.2);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(107, 114, 128, 0.2);
+            transform: translateY(-1px);
+        }
+        @media print {
+            body { background: white; }
+            .search-section, .page-footer { display: none; }
+            .results-section { box-shadow: none; }
+        }
+    </style>
+</body>
+</html>
