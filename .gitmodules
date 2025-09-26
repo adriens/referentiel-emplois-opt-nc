@@ -1,0 +1,6 @@
+[submodule "chatbot-rh"]
+	path = chatbot-rh
+	url = https://github.com/SqrrtSqrrt/chatbot-rh.git
+[submodule "excel-to-sql-generator"]
+	path = excel-to-sql-generator
+	url = https://github.com/SqrrtSqrrt/excel-to-sql-generator.git
